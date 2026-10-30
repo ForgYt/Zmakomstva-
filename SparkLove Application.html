@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SparkLove — Онлайн Знакомства</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            pink: '#FF2A6D',
+                            purple: '#9B51E0',
+                            orange: '#FF5E3A',
+                            dark: '#0D0E15',
+                            card: '#161922',
+                        }
+                    },
+                    boxShadow: {
+                        'neon-pink': '0 0 20px rgba(255, 42, 109, 0.5)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0b0c10;
+            color: #ffffff;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        .glass-panel {
+            background: rgba(22, 25, 34, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #FF2A6D 0%, #FF5E3A 50%, #9B51E0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gradient-btn {
+            background: linear-gradient(135deg, #FF2A6D 0%, #FF5E3A 100%);
+            transition: all 0.3s ease;
+        }
+        .gradient-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 42, 109, 0.4);
+        }
+        .card-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 520px;
+        }
+        .swipe-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            cursor: grab;
+            user-select: none;
+            will-change: transform;
+            transition: transform 0.2s ease;
+        }
+        .swipe-card:active { cursor: grabbing; }
+        .swipe-badge {
+            position: absolute;
+            top: 40px;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .badge-like { left: 30px; color: #4EED97; border: 4px solid #4EED97; transform: rotate(-15deg); }
+        .badge-nope { right: 30px; color: #FF2A6D; border: 4px solid #FF2A6D; transform: rotate(15deg); }
+        .swipe-out-right { transform: translate3d(1000px, 100px, 0) rotate(45deg) !important; transition: transform 0.5s ease-in-out !important; }
+        .swipe-out-left { transform: translate3d(-1000px, 100px, 0) rotate(-45deg) !important; transition: transform 0.5s ease-in-out !important; }
+    </style>
+</head>
+<body class="bg-brand-dark min-h-screen flex flex-col items-center justify-between antialiased">
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="w-full max-w-md h-screen flex flex-col justify-center items-center p-6 bg-[#0a0b10]">
+        <div class="w-full glass-panel rounded-3xl p-6 space-y-6 shadow-neon-pink/20">
+            <div class="text-center space-y-2">
+                <i class="fa-solid fa-heart-pulse text-5xl text-brand-pink animate-pulse"></i>
+                <h1 class="text-3xl font-black tracking-wider gradient-text">SparkLove</h1>
+                <p id="auth-subtitle" class="text-xs text-gray-400">Войдите в свой аккаунт для поиска пары</p>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div id="auth-name-container" class="hidden">
+                    <label class="block text-xs text-gray-400 mb-1">Ваше Имя</label>
+                    <input type="text" id="auth-name" placeholder="Анна" class="w-full bg-gray-900/80 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Email</label>
+                    <input type="email" id="auth-email" required placeholder="user@example.com" class="w-full bg-gray-900/80 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Пароль</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-gray-900/80 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-pink">
+                </div>
+
+                <p id="auth-error" class="hidden text-xs text-red-400 text-center font-medium"></p>
+
+                <button type="submit" class="w-full py-3.5 gradient-btn rounded-xl font-bold text-sm text-white shadow-lg flex items-center justify-center space-x-2">
+                    <span id="auth-btn-text">Войти в аккаунт</span>
+                </button>
+            </form>
+
+            <div class="text-center pt-2">
+                <button type="button" onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-gray-400 hover:text-brand-pink transition underline">
+                    Нет аккаунта? Зарегистрироваться
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app" class="hidden w-full max-w-md h-screen flex flex-col justify-between relative overflow-hidden bg-[#0a0b10] shadow-2xl border-x border-gray-800/40">
+
+        <!-- HEADER -->
+        <header class="w-full px-5 py-4 flex justify-between items-center z-30 glass-panel border-b border-white/5">
+            <div class="flex items-center space-x-2 cursor-pointer" onclick="switchTab('feed')">
+                <i class="fa-solid fa-heart-pulse text-2xl text-brand-pink animate-pulse"></i>
+                <span class="text-2xl font-extrabold tracking-wider gradient-text">SparkLove</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openAddCardModal()" class="w-9 h-9 rounded-full bg-white/10 text-brand-pink flex items-center justify-center border border-brand-pink/30">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                </button>
+                <button onclick="switchTab('likes')" class="relative p-2 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-fire text-xl"></i>
+                    <span id="match-badge" class="hidden absolute top-0 right-0 w-3 h-3 bg-brand-pink rounded-full"></span>
+                </button>
+                <button onclick="switchTab('profile')" class="w-9 h-9 rounded-full overflow-hidden border-2 border-brand-purple p-0.5">
+                    <img id="header-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300" class="w-full h-full object-cover rounded-full">
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 relative flex flex-col items-center justify-center p-4 overflow-hidden w-full">
+
+            <!-- TAB 1: FEED -->
+            <section id="tab-feed" class="w-full h-full flex flex-col items-center justify-between py-2">
+                <div class="card-container flex items-center justify-center" id="card-stack"></div>
+
+                <div id="empty-state" class="hidden flex-col items-center justify-center text-center p-6 space-y-4 my-auto">
+                    <div class="w-20 h-20 rounded-full bg-brand-pink/10 border border-brand-pink/30 flex items-center justify-center text-brand-pink text-3xl">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </div>
+                    <h3 class="text-xl font-bold">Лента пуста</h3>
+                    <p class="text-gray-400 text-xs max-w-xs">В базе пока нет новых анкет. Добавьте свою или создайте новые карточки!</p>
+                    <button onclick="openAddCardModal()" class="gradient-btn px-6 py-3 rounded-full font-bold text-xs flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Добавить анкету</span>
+                    </button>
+                </div>
+
+                <div id="action-buttons" class="w-full max-w-xs flex justify-around items-center px-4 py-2 my-auto">
+                    <button onclick="handleSwipe('left')" class="w-14 h-14 rounded-full bg-gray-900/80 border border-gray-700/60 text-red-500 hover:bg-red-500/20 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <button onclick="handleSwipe('right')" class="w-14 h-14 rounded-full bg-gray-900/80 border border-gray-700/60 text-emerald-400 hover:bg-emerald-500/20 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-heart"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- TAB 2: MATCHES & CHAT -->
+            <section id="tab-likes" class="hidden w-full h-full flex-col">
+                <div id="matches-list-view" class="w-full h-full flex flex-col">
+                    <h2 class="text-lg font-bold px-1 mb-3 flex items-center space-x-2">
+                        <span>Понравившиеся / Пары</span>
+                        <span id="matches-count" class="bg-brand-pink/20 text-brand-pink text-xs px-2.5 py-0.5 rounded-full">0</span>
+                    </h2>
+                    <div id="matches-grid" class="flex-1 overflow-y-auto space-y-3"></div>
+                    <div id="no-matches" class="hidden flex-1 flex flex-col items-center justify-center text-center p-6 text-gray-500">
+                        <i class="fa-regular fa-heart text-4xl mb-2"></i>
+                        <p class="text-sm font-semibold text-gray-300">Список лайков пуст</p>
+                    </div>
+                </div>
+
+                <!-- CHAT VIEW -->
+                <div id="chat-view" class="hidden w-full h-full flex-col bg-brand-dark/95 rounded-2xl border border-white/5 overflow-hidden">
+                    <div class="px-4 py-3 bg-brand-card/90 border-b border-white/10 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <button onclick="closeChat()" class="text-gray-400 p-1"><i class="fa-solid fa-chevron-left text-lg"></i></button>
+                            <img id="chat-user-img" src="" class="w-10 h-10 rounded-full object-cover border border-brand-pink">
+                            <h4 id="chat-user-name" class="font-bold text-sm">Имя</h4>
+                        </div>
+                    </div>
+                    <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col"></div>
+                    <form onsubmit="sendMessage(event)" class="p-3 bg-brand-card border-t border-white/10 flex items-center gap-2">
+                        <input id="chat-input" type="text" placeholder="Напишите сообщение..." required class="flex-1 bg-gray-900 border border-gray-700/60 rounded-full px-4 py-2.5 text-sm text-white focus:outline-none">
+                        <button type="submit" class="w-10 h-10 rounded-full gradient-btn flex items-center justify-center text-white shrink-0">
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 3: PROFILE -->
+            <section id="tab-profile" class="hidden w-full h-full overflow-y-auto p-2">
+                <div class="glass-panel rounded-2xl p-5 space-y-4">
+                    <div class="text-center">
+                        <h2 class="text-xl font-bold">Мой профиль</h2>
+                        <p class="text-xs text-gray-400" id="user-email-display"></p>
+                    </div>
+                    <div class="flex flex-col items-center space-y-3">
+                        <img id="profile-preview-img" src="" class="w-24 h-24 rounded-full object-cover border-4 border-brand-pink/50">
+                        <input type="url" id="user-avatar-url" placeholder="Ссылка на фото" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white">
+                    </div>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="text" id="user-name" placeholder="Имя" class="col-span-2 bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
+                            <input type="number" id="user-age" placeholder="Лет" class="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
+                        </div>
+                        <textarea id="user-bio" rows="3" placeholder="О себе" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white resize-none"></textarea>
+                        <input type="text" id="user-tags" placeholder="Интересы (через запятую)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white">
+                        <button onclick="saveUserProfile()" class="w-full py-3 gradient-btn rounded-xl font-bold text-sm">Сохранить</button>
+                        <button onclick="handleLogout()" class="w-full py-2 bg-red-500/10 text-red-400 rounded-xl text-xs">Выйти</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- NAVIGATION -->
+        <nav class="w-full py-3 px-6 glass-panel border-t border-white/5 flex justify-around items-center z-30">
+            <button onclick="switchTab('feed')" id="nav-feed" class="flex flex-col items-center text-brand-pink"><i class="fa-solid fa-layer-group text-xl"></i><span class="text-[10px]">Обзор</span></button>
+            <button onclick="switchTab('likes')" id="nav-likes" class="flex flex-col items-center text-gray-400"><i class="fa-solid fa-heart text-xl"></i><span class="text-[10px]">Пары</span></button>
+            <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center text-gray-400"><i class="fa-solid fa-user text-xl"></i><span class="text-[10px]">Профиль</span></button>
+        </nav>
+    </div>
+
+    <!-- MODAL ADD PROFILE -->
+    <div id="add-card-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div class="glass-panel bg-brand-card w-full max-w-sm rounded-2xl p-5 space-y-3">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                <h3 class="font-bold text-sm">Создать анкету</h3>
+                <button onclick="closeAddCardModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="handleAddCard(event)" class="space-y-2 text-xs">
+                <input type="text" id="card-name" required placeholder="Имя" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white">
+                <input type="number" id="card-age" required value="22" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white">
+                <textarea id="card-bio" placeholder="О себе" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white resize-none"></textarea>
+                <input type="url" id="card-image" placeholder="Ссылка на фото" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white">
+                <button type="submit" class="w-full py-2.5 gradient-btn rounded-xl font-bold text-white">Опубликовать</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FIREBASE SCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Замените на ваши данные из Firebase Console!
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "YOUR_APP_ID"
+        };
+
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
+
+        let currentUser = null;
+        let currentUserProfile = null;
+        let isRegistering = false;
+        let feedProfiles = [];
+        let matchesList = [];
+        let activeChatUserId = null;
+        let chatUnsubscribe = null;
+
+        window.handleAuthSubmit = handleAuthSubmit;
+        window.toggleAuthMode = toggleAuthMode;
+        window.switchTab = switchTab;
+        window.openAddCardModal = () => document.getElementById('add-card-modal').classList.remove('hidden');
+        window.closeAddCardModal = () => document.getElementById('add-card-modal').classList.add('hidden');
+        window.handleAddCard = handleAddCard;
+        window.handleSwipe = handleSwipe;
+        window.openChat = openChat;
+        window.closeChat = closeChat;
+        window.sendMessage = sendMessage;
+        window.saveUserProfile = saveUserProfile;
+        window.handleLogout = () => signOut(auth);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                document.getElementById('user-email-display').innerText = user.email;
+                await loadUserProfile();
+                await fetchFeedProfiles();
+                await fetchMatches();
+            } else {
+                currentUser = null;
+                document.getElementById('app').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }
+        });
+
+        function toggleAuthMode() {
+            isRegistering = !isRegistering;
+            document.getElementById('auth-name-container').classList.toggle('hidden', !isRegistering);
+            document.getElementById('auth-btn-text').innerText = isRegistering ? 'Зарегистрироваться' : 'Войти в аккаунт';
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value;
+            try {
+                if (isRegistering) {
+                    const res = await createUserWithEmailAndPassword(auth, email, password);
+                    const profile = { uid: res.user.uid, name: name || 'Пользователь', age: 22, bio: '', tags: [], image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400' };
+                    await setDoc(doc(db, 'profiles', res.user.uid), profile);
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+            } catch (err) {
+                document.getElementById('auth-error').innerText = err.message;
+                document.getElementById('auth-error').classList.remove('hidden');
+            }
+        }
+
+        async function loadUserProfile() {
+            const snap = await getDoc(doc(db, 'profiles', currentUser.uid));
+            if (snap.exists()) {
+                currentUserProfile = snap.data();
+                document.getElementById('user-name').value = currentUserProfile.name || '';
+                document.getElementById('user-age').value = currentUserProfile.age || '';
+                document.getElementById('user-bio').value = currentUserProfile.bio || '';
+                document.getElementById('profile-preview-img').src = currentUserProfile.image || '';
+            }
+        }
+
+        async function saveUserProfile() {
+            currentUserProfile = {
+                uid: currentUser.uid,
+                name: document.getElementById('user-name').value,
+                age: document.getElementById('user-age').value,
+                bio: document.getElementById('user-bio').value,
+                image: document.getElementById('user-avatar-url').value || currentUserProfile.image
+            };
+            await setDoc(doc(db, 'profiles', currentUser.uid), currentUserProfile);
+            alert('Профиль сохранен!');
+        }
+
+        async function fetchFeedProfiles() {
+            const snap = await getDocs(collection(db, 'profiles'));
+            feedProfiles = [];
+            snap.forEach(d => { if (d.id !== currentUser.uid) feedProfiles.push({ id: d.id, ...d.data() }); });
+            renderFeed();
+        }
+
+        function renderFeed() {
+            const stack = document.getElementById('card-stack');
+            stack.innerHTML = '';
+            if (feedProfiles.length === 0) {
+                document.getElementById('empty-state').classList.remove('hidden');
+                document.getElementById('action-buttons').classList.add('hidden');
+                return;
+            }
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
+
+            const p = feedProfiles[0];
+            const card = document.createElement('div');
+            card.className = 'swipe-card glass-panel flex flex-col justify-end p-5';
+            card.innerHTML = `
+                <img src="${p.image}" class="absolute inset-0 w-full h-full object-cover">
+                <div class="relative z-10">
+                    <h2 class="text-3xl font-bold">${p.name}, ${p.age}</h2>
+                    <p class="text-xs text-gray-200 mt-1">${p.bio}</p>
+                </div>
+            `;
+            stack.appendChild(card);
+        }
+
+        async function handleSwipe(dir) {
+            if (feedProfiles.length === 0) return;
+            const p = feedProfiles.shift();
+            if (dir === 'right') {
+                await setDoc(doc(db, 'users', currentUser.uid, 'matches', p.id), p);
+            }
+            renderFeed();
+        }
+
+        async function fetchMatches() {
+            const snap = await getDocs(collection(db, 'users', currentUser.uid, 'matches'));
+            matchesList = [];
+            snap.forEach(d => matchesList.push({ id: d.id, ...d.data() }));
+            document.getElementById('matches-grid').innerHTML = matchesList.map(m => `
+                <div onclick="openChat('${m.id}')" class="glass-panel p-3 rounded-xl flex items-center space-x-3 cursor-pointer">
+                    <img src="${m.image}" class="w-10 h-10 rounded-full object-cover">
+                    <span class="font-bold text-sm">${m.name}</span>
+                </div>
+            `).join('');
+        }
+
+        function openChat(id) {
+            activeChatUserId = id;
+            document.getElementById('matches-list-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+            document.getElementById('chat-view').classList.add('flex');
+            
+            const chatId = [currentUser.uid, id].sort().join('_');
+            chatUnsubscribe = onSnapshot(collection(db, 'chats', chatId, 'messages'), snap => {
+                const msgs = [];
+                snap.forEach(d => msgs.push(d.data()));
+                msgs.sort((a,b) => a.time - b.time);
+                document.getElementById('chat-messages').innerHTML = msgs.map(m => `
+                    <div class="flex ${m.sender === currentUser.uid ? 'justify-end' : 'justify-start'}">
+                        <div class="px-3 py-1.5 rounded-xl text-xs ${m.sender === currentUser.uid ? 'gradient-btn' : 'bg-gray-800'}">${m.text}</div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function closeChat() {
+            if (chatUnsubscribe) chatUnsubscribe();
+            document.getElementById('chat-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('flex');
+            document.getElementById('matches-list-view').classList.remove('hidden');
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            const chatId = [currentUser.uid, activeChatUserId].sort().join('_');
+            await addDoc(collection(db, 'chats', chatId, 'messages'), { text, sender: currentUser.uid, time: Date.now() });
+        }
+
+        async function handleAddCard(e) {
+            e.preventDefault();
+            const id = 'custom_' + Date.now();
+            const profile = {
+                uid: id,
+                name: document.getElementById('card-name').value,
+                age: document.getElementById('card-age').value,
+                bio: document.getElementById('card-bio').value,
+                image: document.getElementById('card-image').value || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400'
+            };
+            await setDoc(doc(db, 'profiles', id), profile);
+            closeAddCardModal();
+            fetchFeedProfiles();
+        }
+
+        function switchTab(t) {
+            ['feed', 'likes', 'profile'].forEach(id => document.getElementById('tab-' + id).classList.add('hidden'));
+            document.getElementById('tab-' + t).classList.remove('hidden');
+            if (t === 'likes') fetchMatches();
+        }
+    </script>
+</body>
+</html>
